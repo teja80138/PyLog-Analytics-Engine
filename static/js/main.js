@@ -54,6 +54,9 @@ function saveUserPreferences() {
 /* ==========================================================================
    PYODIDE BOOTSTRAP ENGINE
    ========================================================================== */
+// Base path detection to support both root domain and GitHub Pages subdirectories
+const BASE_PATH = window.location.pathname.replace(/\/[^/]*$/, '');
+
 const PIPELINE_MODULES = [
   'pipeline/stop_words.py',
   'pipeline/log_generator.py',
@@ -107,13 +110,14 @@ async function bootPyodide() {
     for (let i = 0; i < totalFiles; i++) {
       const path = PIPELINE_MODULES[i];
       const filename = path.split('/').pop();
+      const fetchUrl = `${BASE_PATH}/${path}`.replace(/\/+/g, '/');
 
       updateProgress(1 + i, 10, `Fetching ${filename}...`);
       appendBootEntry(`[${(0.6 + i * 0.1).toFixed(2)}s] Fetching ${path}...`);
 
-      const resp = await fetch(path);
+      const resp = await fetch(fetchUrl);
       if (!resp.ok) {
-        throw new Error(`HTTP ${resp.status} ${resp.statusText} while fetching ${path}`);
+        throw new Error(`HTTP ${resp.status} ${resp.statusText} while fetching ${fetchUrl}`);
       }
       const code = await resp.text();
       appState.rawSourceCodes[filename] = code;
