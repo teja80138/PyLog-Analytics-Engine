@@ -57,7 +57,9 @@ jobs:
           "
 
       - name: Run pipeline unit tests
-        run: pytest tests/ -v
+        env:
+          PYTHONPATH: .
+        run: python -m pytest tests/ -v
 
   deploy:
     needs: validate
