@@ -9,46 +9,19 @@
   <!-- Google Fonts: Inter and JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- External Stylesheet -->
-  <link rel="stylesheet" href="static/css/main.css?v=2.0.2">
+  <link rel="stylesheet" href="static/css/main.css?v=2.1.0">
 
   <!-- Pinned Pyodide v0.26.4 CDN -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 </head>
-<body>
+<body class="pyodide-booting">
 
-  <!-- Fullscreen Pyodide Boot Sequence Overlay -->
-  <div id="bootOverlay" class="boot-fullscreen-overlay">
-    <div class="boot-modal-card">
-      <div class="boot-card-head">
-        <div class="boot-window-dots">
-          <div class="boot-dot-item"></div>
-          <div class="boot-dot-item"></div>
-          <div class="boot-dot-item"></div>
-        </div>
-        <div>PyLog Runtime Bootloader</div>
-        <div style="font-size: 10px; color: var(--text-muted);">Python 3.12 WASM</div>
-      </div>
-      <div id="bootLog" class="boot-terminal-log">
-        <div>[0.02s] Initializing PyLog runtime environment...</div>
-      </div>
-      <div id="bootErrorCard" style="display: none; padding: 12px 16px; background-color: rgba(239, 68, 68, 0.15); border-top: 1px solid var(--level-error); color: #fca5a5; font-size: 12px;">
-        <div style="font-weight: 600; margin-bottom: 4px;">Boot Failure</div>
-        <div id="bootErrorMsg" style="font-family: var(--font-mono); margin-bottom: 8px;"></div>
-        <button onclick="location.reload()" class="btn btn-secondary btn-sm">Retry Boot</button>
-      </div>
-      <div class="boot-card-foot">
-        <div class="boot-progress-track">
-          <div id="bootProgressBar" class="boot-progress-fill"></div>
-        </div>
-        <div class="boot-status-row">
-          <span id="bootStatusLine">Loading Pyodide WebAssembly binary...</span>
-          <span id="bootPctText">10%</span>
-        </div>
-      </div>
-    </div>
+  <!-- Top Viewport 3px Pinned Progress Bar -->
+  <div id="topProgressBar" class="top-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <div id="topProgressFill" class="top-progress-fill"></div>
   </div>
 
   <!-- Application Shell -->
@@ -57,77 +30,81 @@
     <!-- Fixed Left Sidebar (240px) -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <div class="brand-icon">
-          <!-- Geometric Hexagon SVG Icon -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-            <line x1="12" y1="22.08" x2="12" y2="12"></line>
-          </svg>
-        </div>
-        <div class="brand-text">
-          <h1>PyLog Engine</h1>
-          <p>Distributed Analytics</p>
+        <div class="brand-wrap">
+          <div class="brand-mark">
+            <!-- Purpose-built logo: log lines as horizontal bars with process indicator checkmark -->
+            <svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+              <rect x="3" y="5" width="16" height="3" rx="1.5" fill="#38bdf8"/>
+              <rect x="3" y="11" width="22" height="3" rx="1.5" fill="#38bdf8" fill-opacity="0.6"/>
+              <rect x="3" y="17" width="13" height="3" rx="1.5" fill="#38bdf8" fill-opacity="0.35"/>
+              <circle cx="21" cy="20" r="5.5" fill="#151923" stroke="#10b981" stroke-width="1.5"/>
+              <path d="M19 20l1.5 1.5 3-3" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <div class="brand-title">PyLog</div>
+            <div class="brand-subtitle">Analytics Engine</div>
+          </div>
         </div>
       </div>
 
       <nav class="sidebar-nav">
         <div class="nav-label">Panels</div>
         <div class="nav-item active" data-tab="panel-input" tabindex="0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M14 9l3 3-3 3"/></svg>
           <span>Input &amp; Ingestion</span>
         </div>
         <div class="nav-item" data-tab="panel-pipeline" tabindex="0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           <span>Pipeline &amp; Workers</span>
         </div>
         <div class="nav-item" data-tab="panel-results" tabindex="0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           <span>Results &amp; Analytics</span>
         </div>
         <div class="nav-item" data-tab="panel-export" tabindex="0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           <span>Export &amp; Code</span>
         </div>
 
         <!-- Sidebar Pipeline Status Box -->
-        <div class="sidebar-status-box" style="margin-top: 16px;">
+        <div class="sidebar-status-box">
           <div class="status-title">
             <span>Pipeline Monitor</span>
-            <span style="color: var(--accent);">Online</span>
+            <span id="sidePipelineBadge" style="color: var(--accent);">Ready</span>
           </div>
           <div class="stage-status-list">
             <div class="stage-status-row">
               <span>Splitter</span>
-              <div>
+              <div class="stage-dot-wrap">
                 <span id="sideDot-split" class="stage-dot idle"></span>
                 <span id="sideState-split">Ready</span>
               </div>
             </div>
             <div class="stage-status-row">
               <span>Mapper</span>
-              <div>
+              <div class="stage-dot-wrap">
                 <span id="sideDot-map" class="stage-dot idle"></span>
                 <span id="sideState-map">Ready</span>
               </div>
             </div>
             <div class="stage-status-row">
               <span>Shuffler</span>
-              <div>
+              <div class="stage-dot-wrap">
                 <span id="sideDot-shuffle" class="stage-dot idle"></span>
                 <span id="sideState-shuffle">Ready</span>
               </div>
             </div>
             <div class="stage-status-row">
               <span>Reducer</span>
-              <div>
+              <div class="stage-dot-wrap">
                 <span id="sideDot-reduce" class="stage-dot idle"></span>
                 <span id="sideState-reduce">Ready</span>
               </div>
             </div>
             <div class="stage-status-row">
               <span>Aggregator</span>
-              <div>
+              <div class="stage-dot-wrap">
                 <span id="sideDot-aggregate" class="stage-dot idle"></span>
                 <span id="sideState-aggregate">Ready</span>
               </div>
@@ -139,7 +116,7 @@
       <div class="sidebar-footer">
         <div class="runtime-badge">
           <div id="runtimePulse" class="pulse-indicator loading"></div>
-          <span id="runtimeLabel">Pyodide v0.26.4</span>
+          <span id="runtimeLabel">Pyodide: Loading...</span>
         </div>
         <span id="workerCountSidebar">4 Nodes</span>
       </div>
@@ -155,285 +132,456 @@
           <span class="header-crumb">: PyLog-Analytics-Engine</span>
         </div>
         <div class="header-actions">
-          <button id="btnRunHeader" class="btn btn-primary">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <button id="btnRunHeader" class="btn btn-primary" title="Execute Pipeline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             <span>Run Pipeline</span>
           </button>
           <button id="btnResetHeader" class="btn btn-secondary" title="Reset system state">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
             <span>Reset</span>
           </button>
         </div>
       </header>
+
+      <!-- Non-blocking Top Error / Status Banner -->
+      <div id="bootErrorBanner" class="boot-error-banner" style="display: none;">
+        <div class="banner-content">
+          <div class="banner-title">Runtime Notification</div>
+          <div id="bootErrorMsg" class="banner-msg"></div>
+        </div>
+        <button onclick="location.reload()" class="btn btn-secondary btn-sm">Retry</button>
+      </div>
 
       <!-- Scrollable Tab Panels -->
       <div class="content-scroll">
 
         <!-- TAB 1: INPUT AND INGESTION -->
         <section id="panel-input" class="tab-panel active">
-          
-          <div class="panel-card">
-            <div class="card-header-row">
-              <div>
-                <div class="card-title-text">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="12 8 8 12 12 16 12 8"></polygon></svg>
-                  <span>Log Data Source Selection</span>
+          <div class="input-flow-container">
+
+            <!-- STEP 1: Select Input Mode -->
+            <div class="flow-step">
+              <div class="step-header">
+                <span class="step-num">01</span>
+                <div class="step-title-group">
+                  <h3 class="step-title">Select Ingestion Source</h3>
+                  <p class="step-desc">Choose how log data will be partitioned and processed by worker nodes</p>
                 </div>
-                <div class="card-desc-text">Choose between synthetic log generation, direct clipboard paste, or file drop.</div>
               </div>
-              <div class="mode-pill-selector">
-                <button class="mode-pill-btn active" data-mode="generate">Generate</button>
-                <button class="mode-pill-btn" data-mode="paste">Paste</button>
-                <button class="mode-pill-btn" data-mode="upload">Upload</button>
+
+              <div class="mode-cards-grid">
+                <!-- Card 1: Generate -->
+                <div class="mode-select-card active" data-mode="generate" tabindex="0">
+                  <div class="card-icon-wrap">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    </svg>
+                  </div>
+                  <div class="card-body">
+                    <div class="card-label">Procedural Generator</div>
+                    <div class="card-subtext">Generate realistic distributed multi-service log streams with weighted log levels.</div>
+                  </div>
+                  <div class="card-radio-indicator"></div>
+                </div>
+
+                <!-- Card 2: Paste -->
+                <div class="mode-select-card" data-mode="paste" tabindex="0">
+                  <div class="card-icon-wrap">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                      <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                    </svg>
+                  </div>
+                  <div class="card-body">
+                    <div class="card-label">Direct Paste</div>
+                    <div class="card-subtext">Paste raw log lines directly from your clipboard, terminal, or log viewer.</div>
+                  </div>
+                  <div class="card-radio-indicator"></div>
+                </div>
+
+                <!-- Card 3: Upload -->
+                <div class="mode-select-card" data-mode="upload" tabindex="0">
+                  <div class="card-icon-wrap">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                  </div>
+                  <div class="card-body">
+                    <div class="card-label">File Drop</div>
+                    <div class="card-subtext">Load .log or .txt files directly from your computer via browser-local FileReader.</div>
+                  </div>
+                  <div class="card-radio-indicator"></div>
+                </div>
               </div>
             </div>
 
-            <!-- Mode 1: Generate -->
-            <div id="modeSectionGen">
-              <div class="form-row-grid">
-                <div class="form-item">
-                  <label class="form-item-label" for="lineCountSelect">Log Volume</label>
-                  <select id="lineCountSelect" class="form-select">
-                    <option value="500">500 lines</option>
-                    <option value="2000" selected>2,000 lines</option>
-                    <option value="10000">10,000 lines</option>
-                    <option value="custom">Custom count...</option>
-                  </select>
-                  <div id="customLineWrap" style="display: none; margin-top: 4px;">
-                    <input type="number" id="customLineInput" class="form-input" min="100" max="50000" value="3500">
+            <!-- STEP 2: Configure & Data Stage -->
+            <div class="flow-step">
+              <div class="step-header">
+                <span class="step-num">02</span>
+                <div class="step-title-group">
+                  <h3 class="step-title">Configure Pipeline Parameters</h3>
+                  <p class="step-desc">Adjust worker partitioning and text filtering flags</p>
+                </div>
+              </div>
+
+              <!-- Mode 1: Generate Configuration -->
+              <div id="modeSectionGen" class="step-content-box">
+                <div class="config-grid">
+                  <!-- Preset Chips -->
+                  <div class="config-item config-fullwidth">
+                    <label class="control-label">Quick Scenario Presets</label>
+                    <div class="preset-chips-row">
+                      <button type="button" class="preset-chip active" data-preset="all">Full Cluster (Mixed)</button>
+                      <button type="button" class="preset-chip" data-preset="auth">Auth &amp; Security Spike</button>
+                      <button type="button" class="preset-chip" data-preset="gateway">API Gateway Errors</button>
+                      <button type="button" class="preset-chip" data-preset="db">Database Deadlocks</button>
+                    </div>
+                  </div>
+
+                  <!-- Volume Selector -->
+                  <div class="config-item">
+                    <label class="control-label" for="lineCountSelect">Log Volume</label>
+                    <div class="custom-select-wrapper">
+                      <select id="lineCountSelect" class="custom-select">
+                        <option value="500">500 lines (Fast ~20ms)</option>
+                        <option value="2000" selected>2,000 lines (Standard ~50ms)</option>
+                        <option value="5000">5,000 lines (Thorough ~120ms)</option>
+                        <option value="10000">10,000 lines (Heavy ~250ms)</option>
+                      </select>
+                      <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                  </div>
+
+                  <!-- Worker Count Slider -->
+                  <div class="config-item">
+                    <div class="control-label-row">
+                      <label class="control-label" for="workerSlider">Worker Partitions</label>
+                      <span id="workerSliderVal" class="control-val-badge">4 Nodes</span>
+                    </div>
+                    <div class="custom-slider-wrap">
+                      <input type="range" id="workerSlider" class="custom-range" min="2" max="8" step="1" value="4">
+                      <div class="slider-ticks">
+                        <span>2</span>
+                        <span>4</span>
+                        <span>6</span>
+                        <span>8</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Toggles -->
+                  <div class="config-item config-toggles">
+                    <div class="toggle-group">
+                      <label class="custom-toggle">
+                        <input type="checkbox" id="chkStopWords" checked>
+                        <span class="toggle-track"><span class="toggle-indicator"></span></span>
+                        <span class="toggle-text">Filter Stop Words (frozenset)</span>
+                      </label>
+
+                      <label class="custom-toggle">
+                        <input type="checkbox" id="chkBigrams">
+                        <span class="toggle-track"><span class="toggle-indicator"></span></span>
+                        <span class="toggle-text">Compute Bigram Frequencies</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
 
-                <div class="form-item">
-                  <label class="form-item-label" for="workerSlider">
-                    <span>Simulated Worker Nodes</span>
-                    <span id="workerSliderVal" style="font-family: var(--font-mono); color: var(--accent);">4 Nodes</span>
-                  </label>
-                  <input type="range" id="workerSlider" min="2" max="8" step="1" value="4">
-                  <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); font-family: var(--font-mono);">
-                    <span>2 Nodes</span>
-                    <span>4 Nodes</span>
-                    <span>6 Nodes</span>
-                    <span>8 Nodes</span>
+                <!-- Action row -->
+                <div class="config-action-row">
+                  <button type="button" id="btnGenOnly" class="btn btn-secondary btn-sm">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                    <span>Regenerate Fresh Logs</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Mode 2: Paste Configuration -->
+              <div id="modeSectionPaste" class="step-content-box" style="display: none;">
+                <div class="paste-input-wrap">
+                  <textarea id="pasteTextarea" class="custom-textarea" placeholder="Paste log lines here...&#10;[2026-10-03 14:00:01] [INFO] [api-gateway] HTTP 200 GET /telemetry&#10;[2026-10-03 14:00:02] [ERROR] [auth-service] JWT signature validation failed"></textarea>
+                  <div class="paste-footer">
+                    <span id="pasteStatsText">0 lines, 0 characters</span>
                   </div>
                 </div>
 
-                <div class="form-item" style="justify-content: center;">
-                  <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <label class="checkbox-label">
-                      <input type="checkbox" id="chkStopWords" checked>
-                      <span>Filter Stop Words (frozenset)</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox" id="chkBigrams">
-                      <span>Compute Bigram Frequencies</span>
-                    </label>
+                <div class="config-grid" style="margin-top: 14px;">
+                  <div class="config-item">
+                    <div class="control-label-row">
+                      <label class="control-label" for="workerSliderPaste">Worker Partitions</label>
+                      <span id="workerSliderValPaste" class="control-val-badge">4 Nodes</span>
+                    </div>
+                    <div class="custom-slider-wrap">
+                      <input type="range" id="workerSliderPaste" class="custom-range" min="2" max="8" step="1" value="4">
+                      <div class="slider-ticks">
+                        <span>2</span>
+                        <span>4</span>
+                        <span>6</span>
+                        <span>8</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="config-item config-toggles">
+                    <div class="toggle-group">
+                      <label class="custom-toggle">
+                        <input type="checkbox" id="chkStopWordsPaste" checked>
+                        <span class="toggle-track"><span class="toggle-indicator"></span></span>
+                        <span class="toggle-text">Filter Stop Words</span>
+                      </label>
+                      <label class="custom-toggle">
+                        <input type="checkbox" id="chkBigramsPaste">
+                        <span class="toggle-track"><span class="toggle-indicator"></span></span>
+                        <span class="toggle-text">Compute Bigrams</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border);">
-                <button id="btnGenOnly" class="btn btn-secondary">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                  <span>Generate Preview</span>
-                </button>
-                <button id="btnGenAndRun" class="btn btn-primary">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                  <span>Generate and Run</span>
-                </button>
+              <!-- Mode 3: Upload Configuration -->
+              <div id="modeSectionUpload" class="step-content-box" style="display: none;">
+                <div id="uploadDropzone" class="custom-dropzone">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                  <div class="dropzone-text">Drop log file here, or <span class="dropzone-link">browse</span></div>
+                  <div class="dropzone-hint">Supports .log and .txt files (processed entirely in-browser)</div>
+                  <input type="file" id="fileInputElem" accept=".log,.txt" style="display: none;">
+                </div>
+
+                <div id="uploadFileInfoCard" class="file-info-badge" style="display: none;">
+                  <div class="file-info-name">
+                    <span id="uploadFileName">logfile.log</span>
+                    <span id="uploadFileSize" class="file-size">(0 KB)</span>
+                  </div>
+                  <span id="uploadLineCount" class="file-lines">0 lines</span>
+                </div>
+
+                <div class="config-grid" style="margin-top: 14px;">
+                  <div class="config-item">
+                    <div class="control-label-row">
+                      <label class="control-label" for="workerSliderUpload">Worker Partitions</label>
+                      <span id="workerSliderValUpload" class="control-val-badge">4 Nodes</span>
+                    </div>
+                    <div class="custom-slider-wrap">
+                      <input type="range" id="workerSliderUpload" class="custom-range" min="2" max="8" step="1" value="4">
+                      <div class="slider-ticks">
+                        <span>2</span>
+                        <span>4</span>
+                        <span>6</span>
+                        <span>8</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="config-item config-toggles">
+                    <div class="toggle-group">
+                      <label class="custom-toggle">
+                        <input type="checkbox" id="chkStopWordsUpload" checked>
+                        <span class="toggle-track"><span class="toggle-indicator"></span></span>
+                        <span class="toggle-text">Filter Stop Words</span>
+                      </label>
+                      <label class="custom-toggle">
+                        <input type="checkbox" id="chkBigramsUpload">
+                        <span class="toggle-track"><span class="toggle-indicator"></span></span>
+                        <span class="toggle-text">Compute Bigrams</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              <!-- Web Component 5: LogPreviewPane -->
+              <log-preview-pane id="logPreviewPane"></log-preview-pane>
             </div>
 
-            <!-- Mode 2: Paste -->
-            <div id="modeSectionPaste" style="display: none; flex-direction: column; gap: 12px; margin-top: 12px;">
-              <textarea id="pasteTextarea" class="log-textarea" placeholder="Paste raw log lines here...&#10;[2026-10-03 14:02:10] [INFO] [api-gateway] HTTP 200 GET /telemetry duration=14ms&#10;[2026-10-03 14:02:11] [ERROR] [db-connector] Deadlock detected on lock_table"></textarea>
-              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-family: var(--font-mono); color: var(--text-muted);">
-                <span id="pasteStatsText">0 lines, 0 characters</span>
-                <button id="btnPasteRun" class="btn btn-primary btn-sm">Run Pipeline</button>
+            <!-- STEP 3: Run Action -->
+            <div class="flow-step flow-step-action">
+              <div class="step-header">
+                <span class="step-num">03</span>
+                <div class="step-title-group">
+                  <h3 class="step-title">Execute Distributed Pipeline</h3>
+                  <p class="step-desc">Partition lines, execute parallel workers via Pyodide, shuffle and aggregate</p>
+                </div>
               </div>
-            </div>
 
-            <!-- Mode 3: Upload -->
-            <div id="modeSectionUpload" style="display: none; flex-direction: column; gap: 12px; margin-top: 12px;">
-              <div id="uploadDropzone" class="dropzone-box">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
+              <button type="button" id="btnGenAndRun" class="btn btn-primary btn-execute-full">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
                 </svg>
-                <div style="font-weight: 600; color: var(--text-primary); font-size: 13px;">Drag and drop log file here, or click to browse</div>
-                <div style="font-size: 11px; color: var(--text-muted);">Accepts .log and .txt files only (client-side FileReader)</div>
-                <input type="file" id="fileInputElem" accept=".log,.txt" style="display: none;">
-              </div>
-              <div id="uploadFileInfoCard" style="display: none; justify-content: space-between; align-items: center; background-color: var(--bg-base); padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-elem); font-size: 12px; font-family: var(--font-mono);">
-                <div>
-                  <span id="uploadFileName" style="color: var(--text-primary); font-weight: 600;">file.log</span>
-                  <span id="uploadFileSize" style="color: var(--text-muted); margin-left: 8px;">(0 KB)</span>
-                  <span id="uploadLineCount" style="color: var(--accent); margin-left: 8px;">0 lines</span>
-                </div>
-                <button id="btnUploadRun" class="btn btn-primary btn-sm">Run Pipeline</button>
-              </div>
+                <span class="btn-execute-title">Run Distributed MapReduce Pipeline</span>
+                <span id="executeSummaryText" class="btn-execute-subtitle">2,000 lines across 4 workers</span>
+              </button>
             </div>
 
           </div>
-
-          <!-- Web Component 5: LogPreviewPane -->
-          <log-preview-pane id="logPreviewPane"></log-preview-pane>
-
         </section>
 
         <!-- TAB 2: PIPELINE AND WORKERS -->
         <section id="panel-pipeline" class="tab-panel">
-          
-          <!-- Web Component 1: PipelineStageBar -->
-          <pipeline-stage-bar id="stageBar"></pipeline-stage-bar>
+          <div class="pipeline-flow-container">
 
-          <!-- Worker Cluster Grid -->
-          <div class="panel-card">
-            <div class="card-header-row">
-              <div>
-                <div class="card-title-text">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
-                  <span>Simulated Distributed Worker Cluster</span>
+            <!-- Compact Stage Status Bar at Top -->
+            <pipeline-stage-bar id="stageBar"></pipeline-stage-bar>
+
+            <!-- Worker Cluster Grid in Middle -->
+            <div class="panel-card worker-section-card">
+              <div class="card-header-row">
+                <div>
+                  <div class="card-title-text">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                    <span>Simulated Distributed Worker Cluster</span>
+                  </div>
+                  <div class="card-desc-text">Partition allocations, tokenization throughput, and timing deltas per worker node</div>
                 </div>
-                <div class="card-desc-text">Partition allocations, tokenization throughput, and timing deltas per worker node.</div>
               </div>
+
+              <!-- Web Component 2: WorkerGrid -->
+              <worker-grid id="workerGrid"></worker-grid>
             </div>
 
-            <!-- Web Component 2: WorkerGrid -->
-            <worker-grid id="workerGrid"></worker-grid>
+            <!-- Web Component 6: TerminalConsole anchored at bottom -->
+            <terminal-console id="terminalConsole"></terminal-console>
+
           </div>
-
-          <!-- Web Component 6: TerminalConsole -->
-          <terminal-console id="terminalConsole"></terminal-console>
-
         </section>
 
         <!-- TAB 3: RESULTS AND ANALYTICS -->
         <section id="panel-results" class="tab-panel">
+          <div class="results-flow-container">
 
-          <!-- Web Component 4: MetricsDashboard -->
-          <metrics-dashboard id="metricsDashboard"></metrics-dashboard>
+            <!-- Strict Typographic Scale: 4 Metric Cards at Top -->
+            <metrics-dashboard id="metricsDashboard"></metrics-dashboard>
 
-          <!-- Service Dropdown Filter Bar -->
-          <div class="panel-card" style="padding: 12px 16px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-              <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Service-Scoped Telemetry Filter</div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <label for="selectServiceFilter" style="font-size: 11px; color: var(--text-muted); font-weight: 600;">SERVICE:</label>
-                <select id="selectServiceFilter" class="form-select" style="min-width: 200px;">
-                  <option value="ALL">All Services Combined</option>
-                </select>
+            <!-- Service Dropdown Filter Bar -->
+            <div class="panel-card filter-toolbar-card">
+              <div class="filter-toolbar-inner">
+                <div class="filter-toolbar-label">Service-Scoped Telemetry Filter</div>
+                <div class="filter-toolbar-control">
+                  <label for="selectServiceFilter" class="filter-select-label">SERVICE:</label>
+                  <div class="custom-select-wrapper" style="min-width: 240px;">
+                    <select id="selectServiceFilter" class="custom-select">
+                      <option value="ALL">All Services Combined</option>
+                    </select>
+                    <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Web Component 3: FrequencyTable -->
-          <frequency-table id="frequencyTable"></frequency-table>
+            <!-- Full-Width Frequency Table -->
+            <frequency-table id="frequencyTable"></frequency-table>
 
-          <!-- Web Component 7: CssBarChart -->
-          <css-bar-chart id="cssBarChart"></css-bar-chart>
+            <!-- Visual Context: Bar Chart and Timeline Sparkline -->
+            <div class="results-visual-grid">
+              <css-bar-chart id="cssBarChart"></css-bar-chart>
+              <timeline-sparkline id="timelineSparkline"></timeline-sparkline>
+            </div>
 
-          <!-- Web Component 8: TimelineSparkline -->
-          <timeline-sparkline id="timelineSparkline"></timeline-sparkline>
-
-          <!-- Worker Benchmark History Table -->
-          <div class="panel-card">
-            <div class="card-header-row">
-              <div>
-                <div class="card-title-text">Divide-and-Conquer Worker Benchmark History</div>
-                <div class="card-desc-text">Empirical execution time and throughput comparisons across worker partition counts</div>
+            <!-- Divide-and-Conquer Worker Benchmark History Table -->
+            <div class="panel-card">
+              <div class="card-header-row">
+                <div>
+                  <div class="card-title-text">Divide-and-Conquer Worker Benchmark History</div>
+                  <div class="card-desc-text">Empirical execution time and throughput comparisons across worker partition counts</div>
+                </div>
+                <button id="btnClearBenchmarks" class="btn btn-secondary btn-sm">Clear History</button>
               </div>
-              <button id="btnClearBenchmarks" class="btn btn-secondary btn-sm">Clear History</button>
+              <div class="table-scroll-container">
+                <table class="data-tbl">
+                  <thead>
+                    <tr>
+                      <th>Run ID</th>
+                      <th>Worker Nodes</th>
+                      <th>Total Lines</th>
+                      <th>Total Tokens</th>
+                      <th>Execution Time</th>
+                      <th>Throughput</th>
+                      <th>Delta</th>
+                    </tr>
+                  </thead>
+                  <tbody id="benchmarkTbody">
+                    <tr>
+                      <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 16px;">
+                        Run the pipeline with different worker counts (e.g. 2, 4, 8) to record benchmark comparisons.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div class="table-scroll-container">
-              <table class="data-tbl">
-                <thead>
-                  <tr>
-                    <th>Run ID</th>
-                    <th>Worker Nodes</th>
-                    <th>Total Lines</th>
-                    <th>Total Tokens</th>
-                    <th>Execution Time</th>
-                    <th>Throughput</th>
-                    <th>Delta</th>
-                  </tr>
-                </thead>
-                <tbody id="benchmarkTbody">
-                  <tr>
-                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 16px;">
-                      Run the pipeline with different worker counts (e.g. 2, 4, 8) to record benchmark comparisons.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
 
+          </div>
         </section>
 
         <!-- TAB 4: EXPORT AND PIPELINE SOURCE -->
         <section id="panel-export" class="tab-panel">
-          
-          <div class="export-grid-box">
-            <div class="export-action-card">
-              <div class="export-action-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg>
-                <span>Export Frequency Table as CSV</span>
+          <div class="export-flow-container">
+
+            <div class="export-grid-box">
+              <div class="export-action-card">
+                <div class="export-action-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                  <span>Export Frequency Table as CSV</span>
+                </div>
+                <div class="export-action-desc">
+                  Download a clean comma-separated values file of tokens, counts, and frequency percentages.
+                </div>
+                <button id="btnExportCSV" class="btn btn-primary">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>Download .CSV</span>
+                </button>
               </div>
-              <div class="export-action-desc">
-                Download a clean comma-separated values file of tokens, counts, and frequency percentages.
+
+              <div class="export-action-card">
+                <div class="export-action-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+                  <span>Export Full Analysis as JSON</span>
+                </div>
+                <div class="export-action-desc">
+                  Export complete JSON payload including worker metrics, unigrams, bigrams, and service distributions.
+                </div>
+                <button id="btnExportJSON" class="btn btn-primary">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>Download .JSON</span>
+                </button>
               </div>
-              <button id="btnExportCSV" class="btn btn-primary">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                <span>Download .CSV</span>
-              </button>
+
+              <div class="export-action-card">
+                <div class="export-action-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span>Copy TSV to Clipboard</span>
+                </div>
+                <div class="export-action-desc">
+                  Copy tab-separated values ready to paste directly into Google Sheets or Microsoft Excel.
+                </div>
+                <button id="btnCopyTSV" class="btn btn-secondary">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span>Copy Frequency TSV</span>
+                </button>
+              </div>
             </div>
 
-            <div class="export-action-card">
-              <div class="export-action-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
-                <span>Export Full Analysis as JSON</span>
+            <!-- Tabbed Python Source Code Viewer -->
+            <div class="source-viewer-box">
+              <div class="source-viewer-head">
+                <div class="source-viewer-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                  <span>Pipeline Source Modules (real .py files)</span>
+                </div>
+                <div class="source-viewer-actions">
+                  <div id="sourceTabsList" class="source-tabs-list"></div>
+                  <button id="btnCopyCurrentSource" class="btn btn-secondary btn-sm">Copy File</button>
+                </div>
               </div>
-              <div class="export-action-desc">
-                Export complete JSON payload including worker metrics, unigrams, bigrams, and service distributions.
-              </div>
-              <button id="btnExportJSON" class="btn btn-primary">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                <span>Download .JSON</span>
-              </button>
+              <pre id="sourceCodePre" class="source-code-pre">Loading source modules...</pre>
             </div>
 
-            <div class="export-action-card">
-              <div class="export-action-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                <span>Copy TSV to Clipboard</span>
-              </div>
-              <div class="export-action-desc">
-                Copy tab-separated values ready to paste directly into Google Sheets or Microsoft Excel.
-              </div>
-              <button id="btnCopyTSV" class="btn btn-secondary">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                <span>Copy Frequency TSV</span>
-              </button>
-            </div>
           </div>
-
-          <!-- Tabbed Python Source Code Viewer -->
-          <div class="source-viewer-box">
-            <div class="source-viewer-head">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-                <span style="font-weight: 600; font-size: 12px; color: var(--text-primary);">Pipeline Source Modules (real .py files)</span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <div id="sourceTabsList" class="source-tabs-list"></div>
-                <button id="btnCopyCurrentSource" class="btn btn-secondary btn-sm">Copy File</button>
-              </div>
-            </div>
-            <pre id="sourceCodePre" class="source-code-pre">Loading source modules...</pre>
-          </div>
-
         </section>
 
       </div>
@@ -442,6 +590,6 @@
   </div>
 
   <!-- Application Entry Script -->
-  <script src="static/js/main.js?v=2.0.2"></script>
+  <script src="static/js/main.js?v=2.1.0"></script>
 </body>
 </html>
