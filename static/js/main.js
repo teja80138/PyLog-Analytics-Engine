@@ -1102,11 +1102,14 @@ WORKER_RESULTS.append(w_res)
       `);
 
       const wResProxy = appState.pyodide.globals.get('w_res');
-      const wRes = wResProxy.toJs();
-      wResProxy.destroy();
+      const wRes = wResProxy.toJs({ dict_converter: Object.fromEntries });
+      if (wResProxy && typeof wResProxy.destroy === 'function') {
+        wResProxy.destroy();
+      }
 
-      workerGrid.updateWorker(i, 'complete', wRes.unigrams.length, wRes.token_count, wRes.elapsed_ms);
-      term.terminalLog('WORKER', `Worker-${i + 1} emitted ${wRes.token_count} tokens in ${wRes.elapsed_ms.toFixed(1)} ms.`);
+      const unigramCount = wRes.unigrams ? (Array.isArray(wRes.unigrams) ? wRes.unigrams.length : Object.keys(wRes.unigrams).length) : 0;
+      workerGrid.updateWorker(i, 'complete', unigramCount, wRes.token_count || 0, wRes.elapsed_ms || 0);
+      term.terminalLog('WORKER', `Worker-${i + 1} emitted ${wRes.token_count || 0} tokens in ${(wRes.elapsed_ms || 0).toFixed(1)} ms.`);
     }
 
     stageBar.setStageState('map', 'complete', performance.now() - pipelineStart);
@@ -1396,13 +1399,17 @@ async function generateLogs() {
 
   if (term) term.terminalLog('SYS', `Generating ${lineCount.toLocaleString()} procedural log lines...`);
 
+  const seed = (Date.now() + Math.floor(Math.random() * 10000)) % 100000;
   await appState.pyodide.runPythonAsync(`
-GENERATED_LOGS = generate_logs(${lineCount}, seed=int(time.time() * 1000) % 100000)
+import time
+GENERATED_LOGS = generate_logs(${lineCount}, seed=${seed})
   `);
 
-  const logsProxy = appState.pyodide.globals.get('GENERATED_LOGS');
-  const logsText = logsProxy.toString();
-  logsProxy.destroy();
+  const logsVal = appState.pyodide.globals.get('GENERATED_LOGS');
+  const logsText = (logsVal !== undefined && logsVal !== null) ? (typeof logsVal.toString === 'function' ? logsVal.toString() : String(logsVal)) : '';
+  if (logsVal && typeof logsVal.destroy === 'function') {
+    logsVal.destroy();
+  }
 
   appState.currentRawText = logsText;
 
@@ -1424,7 +1431,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Header Actions
-  document.getElementById('btnRunHeader').addEventListener('click', runDistributedPipeline);
+  document.getElementById('btnRunHeader').addEventListener('click', async () => {
+    if (!appState.currentRawText || !appState.currentRawText.trim()) {
+      await generateLogs();
+    }
+    await runDistributedPipeline();
+  });
   document.getElementById('btnResetHeader').addEventListener('click', () => {
     if (confirm('Reset pipeline execution and clear current logs?')) {
       generateLogs();
