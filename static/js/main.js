@@ -80,39 +80,30 @@ const PIPELINE_MODULES = [
 ];
 
 async function bootPyodide() {
-  const bootOverlay = document.getElementById('bootOverlay');
-  const bootLog = document.getElementById('bootLog');
-  const bootProgressBar = document.getElementById('bootProgressBar');
-  const bootStatusLine = document.getElementById('bootStatusLine');
-  const bootPctText = document.getElementById('bootPctText');
-  const bootErrorCard = document.getElementById('bootErrorCard');
+  const topProgressBar = document.getElementById('topProgressBar');
+  const topProgressFill = document.getElementById('topProgressFill');
+  const runtimePulse = document.getElementById('runtimePulse');
+  const runtimeLabel = document.getElementById('runtimeLabel');
+  const bootErrorBanner = document.getElementById('bootErrorBanner');
   const bootErrorMsg = document.getElementById('bootErrorMsg');
 
   // Check for file:// protocol restriction
   if (window.location.protocol === 'file:') {
-    bootErrorCard.style.display = 'block';
-    bootErrorMsg.innerHTML = '<strong>Security Restriction:</strong> Browsers do not permit <code>fetch()</code> on <code>file://</code> URLs.<br><br>Please run the local web server from your terminal:<br><code style="color: #67e8f9; background: #0f172a; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 6px;">./run.sh</code><br><br>Then navigate to <a href="http://localhost:8080" style="color: #38bdf8; text-decoration: underline;">http://localhost:8080</a> in your browser.';
-    bootStatusLine.textContent = 'Please run via ./run.sh';
+    if (bootErrorBanner) bootErrorBanner.style.display = 'flex';
+    if (bootErrorMsg) {
+      bootErrorMsg.innerHTML = '<strong>Security Restriction:</strong> Browsers do not permit <code>fetch()</code> on <code>file://</code> URLs.<br><br>Please run the local web server from your terminal:<br><code style="color: #67e8f9; background: #0f172a; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 6px;">./run.sh</code><br><br>Then navigate to <a href="http://localhost:8080" style="color: #38bdf8; text-decoration: underline;">http://localhost:8080</a> in your browser.';
+    }
+    if (runtimeLabel) runtimeLabel.textContent = 'Server Required';
     return;
-  }
-
-  function appendBootEntry(text, isDone = false) {
-    const div = document.createElement('div');
-    if (isDone) div.className = 'log-success-line';
-    div.textContent = text;
-    bootLog.appendChild(div);
-    bootLog.scrollTop = bootLog.scrollHeight;
   }
 
   function updateProgress(stepIndex, totalSteps, statusText) {
     const pct = Math.round((stepIndex / totalSteps) * 100);
-    bootProgressBar.style.width = pct + '%';
-    bootPctText.textContent = pct + '%';
-    bootStatusLine.textContent = statusText;
+    if (topProgressFill) topProgressFill.style.width = pct + '%';
+    if (runtimeLabel) runtimeLabel.textContent = `Pyodide: ${pct}%...`;
   }
 
   try {
-    appendBootEntry('[0.05s] Initializing Pyodide WebAssembly runtime...');
     updateProgress(0, 10, 'Fetching Pyodide WASM core...');
 
     // Load Pyodide from pinned stable CDN
@@ -120,7 +111,6 @@ async function bootPyodide() {
       indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/'
     });
 
-    appendBootEntry('[0.45s] Pyodide core online (Python 3.12).', true);
     updateProgress(1, 10, 'Pyodide core ready.');
 
     const totalFiles = PIPELINE_MODULES.length;
@@ -132,7 +122,6 @@ async function bootPyodide() {
       const fetchUrl = `${BASE_PATH}/${path}`.replace(/\/+/g, '/');
 
       updateProgress(1 + i, 10, `Fetching ${filename}...`);
-      appendBootEntry(`[${(0.6 + i * 0.1).toFixed(2)}s] Fetching ${path}...`);
 
       const resp = await fetch(fetchUrl);
       if (!resp.ok) {
@@ -143,14 +132,14 @@ async function bootPyodide() {
 
       updateProgress(1 + i + 0.5, 10, `Executing ${filename}...`);
       await appState.pyodide.runPythonAsync(code);
-
-      appendBootEntry(`[${(0.7 + i * 0.1).toFixed(2)}s] Executed: ${filename}`, true);
     }
 
     updateProgress(10, 10, 'All pipeline modules verified and loaded.');
-    appendBootEntry('[1.50s] Pipeline online: splitter, mapper, shuffler, reducer, aggregator registered.', true);
 
     appState.isBooted = true;
+
+    // Remove booting state from body so all controls become interactive
+    document.body.classList.remove('pyodide-booting');
 
     // Populate source code viewer in Export tab
     populateSourceCodeViewer();
@@ -163,21 +152,22 @@ async function bootPyodide() {
     }
 
     // Update status indicators
-    const pulse = document.getElementById('runtimePulse');
-    if (pulse) pulse.classList.remove('loading');
-    const label = document.getElementById('runtimeLabel');
-    if (label) label.textContent = 'Pyodide: Ready';
+    if (runtimePulse) runtimePulse.classList.remove('loading');
+    if (runtimeLabel) runtimeLabel.textContent = 'Pyodide: Ready';
 
-    // Fade out boot overlay
-    setTimeout(() => {
-      bootOverlay.classList.add('hidden');
-    }, 400);
+    // Fade out pinned 3px top progress bar smoothly
+    if (topProgressFill) topProgressFill.style.width = '100%';
+    if (topProgressBar) {
+      setTimeout(() => {
+        topProgressBar.style.opacity = '0';
+      }, 350);
+    }
 
   } catch (err) {
     console.error('Pyodide Boot Failure:', err);
-    bootErrorCard.style.display = 'block';
-    bootErrorMsg.textContent = err.message;
-    bootStatusLine.textContent = 'Boot error encountered.';
+    if (bootErrorBanner) bootErrorBanner.style.display = 'flex';
+    if (bootErrorMsg) bootErrorMsg.textContent = err.message;
+    if (runtimeLabel) runtimeLabel.textContent = 'Boot Error';
   }
 }
 
@@ -1438,6 +1428,88 @@ GENERATED_LOGS = generate_logs(${lineCount}, seed=${seed})
   if (term) term.terminalLog('SYS', `Generated ${lineCount.toLocaleString()} lines successfully.`);
 }
 
+function updateExecutionSummary() {
+  const summaryEl = document.getElementById('executeSummaryText');
+  if (!summaryEl) return;
+  const mode = appState.prefs.last_input_mode || 'generate';
+  const workers = appState.prefs.worker_count || 4;
+
+  if (mode === 'generate') {
+    const lines = appState.prefs.line_count || 2000;
+    summaryEl.textContent = `${lines.toLocaleString()} lines across ${workers} workers`;
+  } else if (mode === 'paste') {
+    const pasteVal = document.getElementById('pasteTextarea') ? document.getElementById('pasteTextarea').value : '';
+    const lines = pasteVal.split('\n').filter(l => l.trim().length > 0).length;
+    summaryEl.textContent = `${lines.toLocaleString()} lines across ${workers} workers`;
+  } else if (mode === 'upload') {
+    const raw = appState.currentRawText || '';
+    const lines = raw.split('\n').filter(l => l.trim().length > 0).length;
+    summaryEl.textContent = `${lines.toLocaleString()} lines across ${workers} workers`;
+  }
+}
+
+async function handleRunExecution() {
+  const mode = appState.prefs.last_input_mode || 'generate';
+
+  if (mode === 'paste') {
+    const pasteVal = document.getElementById('pasteTextarea') ? document.getElementById('pasteTextarea').value.trim() : '';
+    if (!pasteVal) {
+      alert('Please paste some log lines first.');
+      return;
+    }
+    appState.currentRawText = pasteVal;
+    const preview = document.querySelector('log-preview-pane');
+    if (preview) preview.setLogs(pasteVal);
+  } else if (mode === 'upload') {
+    if (!appState.currentRawText || !appState.currentRawText.trim()) {
+      alert('Please select or drop a log file first.');
+      return;
+    }
+  } else {
+    if (!appState.currentRawText || !appState.currentRawText.trim()) {
+      await generateLogs();
+    }
+  }
+
+  await runDistributedPipeline();
+}
+
+async function applyScenarioPreset(preset) {
+  if (!appState.isBooted) return;
+  const lineCount = appState.prefs.line_count || 2000;
+  const term = document.querySelector('terminal-console');
+  if (term) term.terminalLog('SYS', `Applying scenario preset: ${preset} (${lineCount.toLocaleString()} lines)...`);
+
+  const seed = (Date.now() + Math.floor(Math.random() * 10000)) % 100000;
+  let filterPy = '';
+  if (preset === 'auth') {
+    filterPy = 'lines = [line for line in raw.split("\\n") if "[auth-service]" in line or "[ERROR]" in line or "[WARN]" in line]';
+  } else if (preset === 'gateway') {
+    filterPy = 'lines = [line for line in raw.split("\\n") if "[api-gateway]" in line or "502" in line or "504" in line or "[WARN]" in line]';
+  } else if (preset === 'db') {
+    filterPy = 'lines = [line for line in raw.split("\\n") if "[db-connector]" in line or "Deadlock" in line or "timeout" in line or "[FATAL]" in line]';
+  } else {
+    filterPy = 'lines = raw.split("\\n")';
+  }
+
+  await appState.pyodide.runPythonAsync(`
+import time
+raw = generate_logs(${lineCount}, seed=${seed})
+${filterPy}
+GENERATED_LOGS = "\\n".join(lines)
+  `);
+
+  const logsVal = appState.pyodide.globals.get('GENERATED_LOGS');
+  const logsText = (logsVal !== undefined && logsVal !== null) ? (typeof logsVal.toString === 'function' ? logsVal.toString() : String(logsVal)) : '';
+  if (logsVal && typeof logsVal.destroy === 'function') logsVal.destroy();
+
+  appState.currentRawText = logsText;
+  const preview = document.querySelector('log-preview-pane');
+  if (preview) preview.setLogs(logsText);
+  updateExecutionSummary();
+  if (term) term.terminalLog('SYS', `Preset ${preset} loaded (${logsText.split('\n').filter(Boolean).length} lines).`);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadUserPreferences();
 
@@ -1450,12 +1522,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Header Actions
-  document.getElementById('btnRunHeader').addEventListener('click', async () => {
-    if (!appState.currentRawText || !appState.currentRawText.trim()) {
-      await generateLogs();
-    }
-    await runDistributedPipeline();
-  });
+  document.getElementById('btnRunHeader').addEventListener('click', handleRunExecution);
   document.getElementById('btnResetHeader').addEventListener('click', () => {
     if (confirm('Reset pipeline execution and clear current logs?')) {
       generateLogs();
@@ -1468,103 +1535,124 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Input Mode Pill Selector
-  const modePills = document.querySelectorAll('.mode-pill-btn[data-mode]');
-  const modeGen = document.getElementById('modeSectionGen');
-  const modePaste = document.getElementById('modeSectionPaste');
-  const modeUpload = document.getElementById('modeSectionUpload');
-
+  // Step 1: Input Mode Selection Cards
   function setInputMode(mode) {
-    modePills.forEach(p => p.classList.toggle('active', p.getAttribute('data-mode') === mode));
+    document.querySelectorAll('.mode-select-card').forEach(card => {
+      const isActive = card.getAttribute('data-mode') === mode;
+      card.classList.toggle('active', isActive);
+    });
+    const modeGen = document.getElementById('modeSectionGen');
+    const modePaste = document.getElementById('modeSectionPaste');
+    const modeUpload = document.getElementById('modeSectionUpload');
     if (modeGen) modeGen.style.display = (mode === 'generate') ? 'block' : 'none';
     if (modePaste) modePaste.style.display = (mode === 'paste') ? 'block' : 'none';
     if (modeUpload) modeUpload.style.display = (mode === 'upload') ? 'block' : 'none';
     appState.prefs.last_input_mode = mode;
     saveUserPreferences();
+    updateExecutionSummary();
   }
 
-  modePills.forEach(p => {
-    p.addEventListener('click', () => setInputMode(p.getAttribute('data-mode')));
+  document.querySelectorAll('.mode-select-card').forEach(card => {
+    card.addEventListener('click', () => setInputMode(card.getAttribute('data-mode')));
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        setInputMode(card.getAttribute('data-mode'));
+      }
+    });
   });
 
   // Apply saved input mode
   setInputMode(appState.prefs.last_input_mode || 'generate');
 
-  // Generator Controls
-  const lineCountSelect = document.getElementById('lineCountSelect');
-  const customLineWrap = document.getElementById('customLineWrap');
-  const customLineInput = document.getElementById('customLineInput');
-
-  if (lineCountSelect) {
-    if ([500, 2000, 10000].includes(appState.prefs.line_count)) {
-      lineCountSelect.value = String(appState.prefs.line_count);
-      customLineWrap.style.display = 'none';
-    } else {
-      lineCountSelect.value = 'custom';
-      customLineWrap.style.display = 'block';
-      customLineInput.value = appState.prefs.line_count;
-    }
-
-    lineCountSelect.addEventListener('change', (e) => {
-      if (e.target.value === 'custom') {
-        customLineWrap.style.display = 'block';
-        appState.prefs.line_count = Number(customLineInput.value) || 2000;
-      } else {
-        customLineWrap.style.display = 'none';
-        appState.prefs.line_count = Number(e.target.value);
-      }
-      saveUserPreferences();
+  // Step 2: Preset Chips
+  document.querySelectorAll('.preset-chip').forEach(chip => {
+    chip.addEventListener('click', async () => {
+      document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const preset = chip.getAttribute('data-preset');
+      await applyScenarioPreset(preset);
     });
-
-    customLineInput.addEventListener('input', (e) => {
-      const val = Math.max(100, Math.min(50000, Number(e.target.value) || 100));
-      appState.prefs.line_count = val;
-      saveUserPreferences();
-    });
-  }
-
-  // Worker Count Slider
-  const workerSlider = document.getElementById('workerSlider');
-  const workerSliderVal = document.getElementById('workerSliderVal');
-  if (workerSlider) {
-    workerSlider.value = appState.prefs.worker_count;
-    workerSliderVal.textContent = `${appState.prefs.worker_count} Nodes`;
-    document.getElementById('workerCountSidebar').textContent = `${appState.prefs.worker_count} Nodes`;
-
-    workerSlider.addEventListener('input', (e) => {
-      const val = Number(e.target.value);
-      appState.prefs.worker_count = val;
-      workerSliderVal.textContent = `${val} Nodes`;
-      document.getElementById('workerCountSidebar').textContent = `${val} Nodes`;
-      saveUserPreferences();
-    });
-  }
-
-  // Toggles
-  const chkStopWords = document.getElementById('chkStopWords');
-  if (chkStopWords) {
-    chkStopWords.checked = appState.prefs.use_stop_words;
-    chkStopWords.addEventListener('change', (e) => {
-      appState.prefs.use_stop_words = e.target.checked;
-      saveUserPreferences();
-    });
-  }
-
-  const chkBigrams = document.getElementById('chkBigrams');
-  if (chkBigrams) {
-    chkBigrams.checked = appState.prefs.bigrams_mode;
-    chkBigrams.addEventListener('change', (e) => {
-      appState.prefs.bigrams_mode = e.target.checked;
-      saveUserPreferences();
-    });
-  }
-
-  // Generator Action Buttons
-  document.getElementById('btnGenOnly').addEventListener('click', generateLogs);
-  document.getElementById('btnGenAndRun').addEventListener('click', async () => {
-    await generateLogs();
-    await runDistributedPipeline();
   });
+
+  // Volume Selector
+  const lineCountSelect = document.getElementById('lineCountSelect');
+  if (lineCountSelect) {
+    lineCountSelect.value = String(appState.prefs.line_count || 2000);
+    lineCountSelect.addEventListener('change', async (e) => {
+      appState.prefs.line_count = Number(e.target.value);
+      saveUserPreferences();
+      updateExecutionSummary();
+      await generateLogs();
+    });
+  }
+
+  // Worker Count Sliders (Synced across modes)
+  function setWorkerCount(count) {
+    appState.prefs.worker_count = count;
+    ['workerSlider', 'workerSliderPaste', 'workerSliderUpload'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = count;
+    });
+    ['workerSliderVal', 'workerSliderValPaste', 'workerSliderValUpload', 'workerCountSidebar'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = `${count} Nodes`;
+    });
+    const grid = document.querySelector('worker-grid');
+    if (grid) grid.init(count);
+    saveUserPreferences();
+    updateExecutionSummary();
+  }
+
+  ['workerSlider', 'workerSliderPaste', 'workerSliderUpload'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.value = appState.prefs.worker_count;
+      el.addEventListener('input', (e) => setWorkerCount(Number(e.target.value)));
+    }
+  });
+
+  // Toggles (Stop Words and Bigrams, synced across modes)
+  function setStopWords(enabled) {
+    appState.prefs.use_stop_words = enabled;
+    ['chkStopWords', 'chkStopWordsPaste', 'chkStopWordsUpload'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.checked = enabled;
+    });
+    saveUserPreferences();
+  }
+
+  ['chkStopWords', 'chkStopWordsPaste', 'chkStopWordsUpload'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.checked = appState.prefs.use_stop_words;
+      el.addEventListener('change', (e) => setStopWords(e.target.checked));
+    }
+  });
+
+  function setBigrams(enabled) {
+    appState.prefs.bigrams_mode = enabled;
+    ['chkBigrams', 'chkBigramsPaste', 'chkBigramsUpload'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.checked = enabled;
+    });
+    saveUserPreferences();
+  }
+
+  ['chkBigrams', 'chkBigramsPaste', 'chkBigramsUpload'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.checked = appState.prefs.bigrams_mode;
+      el.addEventListener('change', (e) => setBigrams(e.target.checked));
+    }
+  });
+
+  // Action Buttons
+  const btnGenOnly = document.getElementById('btnGenOnly');
+  if (btnGenOnly) btnGenOnly.addEventListener('click', generateLogs);
+
+  const btnGenAndRun = document.getElementById('btnGenAndRun');
+  if (btnGenAndRun) btnGenAndRun.addEventListener('click', handleRunExecution);
 
   // Paste Mode Textarea
   const pasteArea = document.getElementById('pasteTextarea');
@@ -1573,23 +1661,17 @@ document.addEventListener('DOMContentLoaded', () => {
     pasteArea.addEventListener('input', () => {
       const text = pasteArea.value;
       const lines = text.split('\n').filter(l => l.trim().length > 0);
-      pasteStats.textContent = `${lines.length.toLocaleString()} lines, ${text.length.toLocaleString()} characters`;
-    });
-
-    document.getElementById('btnPasteRun').addEventListener('click', async () => {
-      const text = pasteArea.value.trim();
-      if (!text) {
-        alert('Please paste some log lines first.');
-        return;
+      if (pasteStats) {
+        pasteStats.textContent = `${lines.length.toLocaleString()} lines, ${text.length.toLocaleString()} characters`;
       }
       appState.currentRawText = text;
       const preview = document.querySelector('log-preview-pane');
       if (preview) preview.setLogs(text);
-      await runDistributedPipeline();
+      updateExecutionSummary();
     });
   }
 
-  // Upload Mode
+  // Upload Mode Dropzone and File Input
   const dropzone = document.getElementById('uploadDropzone');
   const fileInput = document.getElementById('fileInputElem');
   if (dropzone && fileInput) {
@@ -1618,24 +1700,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = e.target.result;
         appState.currentRawText = text;
         const lines = text.split('\n').filter(l => l.trim().length > 0);
-        document.getElementById('uploadFileName').textContent = file.name;
-        document.getElementById('uploadFileSize').textContent = `(${(file.size / 1024).toFixed(1)} KB)`;
-        document.getElementById('uploadLineCount').textContent = `${lines.length.toLocaleString()} lines`;
-        document.getElementById('uploadFileInfoCard').style.display = 'flex';
+        const nameEl = document.getElementById('uploadFileName');
+        const sizeEl = document.getElementById('uploadFileSize');
+        const countEl = document.getElementById('uploadLineCount');
+        const cardEl = document.getElementById('uploadFileInfoCard');
+        if (nameEl) nameEl.textContent = file.name;
+        if (sizeEl) sizeEl.textContent = `(${(file.size / 1024).toFixed(1)} KB)`;
+        if (countEl) countEl.textContent = `${lines.length.toLocaleString()} lines`;
+        if (cardEl) cardEl.style.display = 'flex';
 
         const preview = document.querySelector('log-preview-pane');
         if (preview) preview.setLogs(text);
+        updateExecutionSummary();
       };
       reader.readAsText(file);
     }
-
-    document.getElementById('btnUploadRun').addEventListener('click', async () => {
-      if (!appState.currentRawText) {
-        alert('Please drop or select a log file first.');
-        return;
-      }
-      await runDistributedPipeline();
-    });
   }
 
   // Export Buttons
@@ -1652,8 +1731,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Boot Pyodide
+  // Initial Boot Pyodide
   bootPyodide().then(() => {
-    generateLogs();
+    generateLogs().then(() => {
+      updateExecutionSummary();
+    });
   });
 });
