@@ -77,7 +77,19 @@ All Python MapReduce pipeline logic is written in real `.py` files inside the `p
 
 ## 5. Running Locally
 
-Run Python's built-in HTTP server from the project root:
+First, run the automated setup script to verify your environment and test suite:
+
+```bash
+./set_up.sh
+```
+
+Then, launch the local WebAssembly application server:
+
+```bash
+./run.sh
+```
+
+Or manually:
 
 ```bash
 python3 -m http.server 8080
@@ -92,7 +104,7 @@ http://localhost:8080
 
 ## 6. Running Tests
 
-The test suite runs against native Python 3.12+ without requiring Pyodide:
+Run the full pytest suite via `./set_up.sh` or directly:
 
 ```bash
 pytest tests/ -v
