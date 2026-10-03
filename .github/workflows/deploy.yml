@@ -1,0 +1,68 @@
+name: Validate and Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install validators
+        run: pip install html5validator pytest
+
+      - name: Validate HTML5
+        run: html5validator --root . --ignore-re ".*pyodide.*"
+
+      - name: Check zero emojis
+        run: |
+          python3 -c "
+          import re, sys, pathlib
+          pat = re.compile(r'[\U00010000-\U0010ffff]')
+          files = [*pathlib.Path('.').rglob('*.html'),
+                   *pathlib.Path('.').rglob('*.js'),
+                   *pathlib.Path('.').rglob('*.css')]
+          bad = [str(f) for f in files if pat.search(f.read_text(errors='ignore'))]
+          if bad: sys.exit(f'Emojis found in: {bad}')
+          print('Emoji check: PASS')
+          "
+
+      - name: Check zero em dashes in source
+        run: |
+          python3 -c "
+          import sys, pathlib
+          dashes = ['\u2014', '\u2013']
+          files = [*pathlib.Path('.').rglob('*.html'), *pathlib.Path('.').rglob('*.js')]
+          bad = [str(f) for f in files
+                 if any(d in f.read_text(errors='ignore') for d in dashes)]
+          if bad: sys.exit(f'Em dashes found in: {bad}')
+          print('Em dash check: PASS')
+          "
+
+      - name: Run pipeline unit tests
+        run: pytest tests/ -v
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          exclude_assets: '.github,tests,README.md'
