@@ -55,7 +55,18 @@ function saveUserPreferences() {
    PYODIDE BOOTSTRAP ENGINE
    ========================================================================== */
 // Base path detection to support both root domain and GitHub Pages subdirectories
-const BASE_PATH = window.location.pathname.replace(/\/[^/]*$/, '');
+function getBasePath() {
+  const path = window.location.pathname;
+  if (window.location.hostname.endsWith('github.io')) {
+    const segments = path.split('/').filter(Boolean);
+    if (segments.length > 0) {
+      return '/' + segments[0];
+    }
+  }
+  return path.replace(/\/[^/]*$/, '') || '';
+}
+
+const BASE_PATH = getBasePath();
 
 const PIPELINE_MODULES = [
   'pipeline/stop_words.py',
@@ -76,6 +87,14 @@ async function bootPyodide() {
   const bootPctText = document.getElementById('bootPctText');
   const bootErrorCard = document.getElementById('bootErrorCard');
   const bootErrorMsg = document.getElementById('bootErrorMsg');
+
+  // Check for file:// protocol restriction
+  if (window.location.protocol === 'file:') {
+    bootErrorCard.style.display = 'block';
+    bootErrorMsg.innerHTML = '<strong>Security Restriction:</strong> Browsers do not permit <code>fetch()</code> on <code>file://</code> URLs.<br><br>Please run the local web server from your terminal:<br><code style="color: #67e8f9; background: #0f172a; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 6px;">./run.sh</code><br><br>Then navigate to <a href="http://localhost:8080" style="color: #38bdf8; text-decoration: underline;">http://localhost:8080</a> in your browser.';
+    bootStatusLine.textContent = 'Please run via ./run.sh';
+    return;
+  }
 
   function appendBootEntry(text, isDone = false) {
     const div = document.createElement('div');
